@@ -1,0 +1,246 @@
+name: Descarga
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 0 */1 * *' # A las 00:00 del sábado
+
+jobs:
+  build1:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python test.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado.xlsx 
+            consolidado_historico.xlsx
+          
+  build2:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python test2.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado2.xlsx 
+            consolidado_historico2.xlsx
+
+  build3:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python test3.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado3.xlsx 
+            consolidado_historico3.xlsx
+  build4:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1" 
+          python test4.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado4.xlsx 
+            consolidado_historico4.xlsx
+  build5:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python test5.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado5.xlsx 
+            consolidado_historico5.xlsx
+  build6:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python test6.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado6.xlsx 
+            consolidado_historico6.xlsx
+  build7:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python test7.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: shared-files
+          path: |
+            consolidado7.xlsx 
+            consolidado_historico7.xlsx
+  unir:
+    runs-on: ubuntu-latest
+    needs: [build1,build2,build3,build4,build5,build6,build7]
+    strategy:
+      matrix:
+        python-version: [3.7]
+    steps:
+      - name: Checkout del repositorio
+        uses: actions/checkout@v2
+
+      - name: Configurar Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.7
+      
+
+      - name: Download artifact
+        uses: actions/download-artifact@v2
+        with:
+          name: shared-files
+          path: shared
+
+      - name: AUTOMATIZACIÓN
+        run: |
+          cp shared/* .
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          echo "Vamos a lo importante...1"    
+          python unir.py  
+      
+      - name: Commit y push cambios
+        uses: stefanzweifel/git-auto-commit-action@v2
+        with:
+          commit_message: "Actualizacion"
+          branch: main
+          commit_user_name: Actions Bot
+          commit_user_email: lmonsalve22@gmail.com
+          commit_author: DataIntelligence BOT <lmonsalve22@gmail.com>
+          push_options: '--force'
