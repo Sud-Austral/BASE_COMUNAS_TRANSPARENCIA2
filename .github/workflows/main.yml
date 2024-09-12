@@ -17,7 +17,7 @@ jobs:
         python-version: [3.7]
     steps:
     - name: Checkout del repositorio
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Configurar Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
@@ -34,7 +34,7 @@ jobs:
         rm TA_PersonalPlanta.csv
         echo Hola2 > saludo.txt
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: shared-files1
         path: |
@@ -48,7 +48,7 @@ jobs:
         python-version: [3.7]
     steps:
     - name: Checkout del repositorio
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Configurar Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
@@ -63,7 +63,7 @@ jobs:
         python build2.py
         rm TA_PersonalContrata.csv
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: shared-files2
         path: |
@@ -79,7 +79,7 @@ jobs:
         python-version: [3.7]
     steps:
     - name: Checkout del repositorio
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Configurar Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
@@ -94,7 +94,7 @@ jobs:
         python build3.py
         rm TA_PersonalCodigotrabajo.csv
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: shared-files3
         path: |
@@ -108,7 +108,7 @@ jobs:
         python-version: [3.7]
     steps:
     - name: Checkout del repositorio
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Configurar Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
@@ -123,7 +123,7 @@ jobs:
         python build4.py
         rm TA_PersonalContratohonorarios.csv
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: shared-files4
         path: |
@@ -136,32 +136,32 @@ jobs:
         python-version: [3.7]
     steps:
     - name: Checkout del repositorio
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
 
     - name: Configurar Python ${{ matrix.python-version }}
       uses: actions/setup-python@v2
       with:
         python-version: 3.7
     - name: Download artifact
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: shared-files1
         path: test1
       continue-on-error: true
     - name: Download artifact2 
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: shared-files2
         path: test2
       continue-on-error: true
     - name: Download artifact3 
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: shared-files3
         path: test3
       continue-on-error: true
     - name: Download artifact4
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: shared-files4
         path: test4
