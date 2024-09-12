@@ -54,7 +54,9 @@ comunas = ['Corporación Municipal de Providencia',
  'Municipalidad de Valdivia',
  'Municipalidad de Valparaíso',
  'Municipalidad de Viña del Mar',
- 'Municipalidad de Ñuñoa']
+ 'Municipalidad de Ñuñoa',
+ 'Municipalidad de Quilpué',
+    'Municipalidad de Villa Alemana']
 
 if __name__ == '__main__':
    for i in comunas:
