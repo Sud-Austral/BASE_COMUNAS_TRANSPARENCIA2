@@ -60,9 +60,10 @@ def descargar_archivo(url, nombre_archivo):
 # descargar_archivo('https://example.com/archivo.zip', 'archivo.zip')
 
 
-def separar_partes(ruta,diccionario,folder):
+def separar_partes(ruta,diccionario,folder,base):
     df = pd.read_csv(ruta, sep=";",encoding="latin",usecols=diccionario)
     df = df.rename(columns={'remuneracionbruta': 'remuneracionbruta_mensual'})
+    df["base"] = base
     for i in df["organismo_nombre"].unique():
         #print(i,ruta,end='\r')
         #print("",end='\r')
@@ -115,16 +116,16 @@ def GLOBAL():
     gc.collect()
     """
     print("deparar_partes1")
-    separar_partes("respaldo/TA_PersonalPlanta.csv"            ,PersonalPlantaDICT            ,"d1")
+    separar_partes("respaldo/TA_PersonalPlanta.csv"            ,PersonalPlantaDICT            ,"d1","Planta")
     print("deparar_partes2")
     gc.collect()
-    separar_partes("respaldo/TA_PersonalContrata.csv"          ,PersonalContrataDICT          ,"d2")
+    separar_partes("respaldo/TA_PersonalContrata.csv"          ,PersonalContrataDICT          ,"d2","Contrata")
     gc.collect()
     print("deparar_partes3")
-    separar_partes("respaldo/TA_PersonalCodigotrabajo.csv"     ,PersonalCodigotrabajoDICT     ,"d3")
+    separar_partes("respaldo/TA_PersonalCodigotrabajo.csv"     ,PersonalCodigotrabajoDICT     ,"d3","Codigotrabajo")
     gc.collect()
     print("deparar_partes4")
-    separar_partes("respaldo/TA_PersonalContratohonorarios.csv",PersonalContratohonorariosDICT,"d4")
+    separar_partes("respaldo/TA_PersonalContratohonorarios.csv",PersonalContratohonorariosDICT,"d4","Contratohonorarios")
     gc.collect()
     
     for i in organismo["organismo"]:
