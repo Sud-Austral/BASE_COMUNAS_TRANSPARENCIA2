@@ -74,6 +74,23 @@ def separar_partes(ruta,diccionario,folder,base):
     # Eliminar el DataFrame después de procesarlo
     del df
 
+import pandas as pd
+
+def asegurar_columnas(df):
+    # Lista de columnas que se esperan en el DataFrame
+    columnas_requeridas = ['organismo_nombre', 'anyo', 'Mes', 'Nombres', 'Paterno', 'Materno',
+                           'tipo_calificacionp', 'Tipo cargo', 'remuneracionbruta_mensual',
+                           'remuliquida_mensual', 'base', 'tipo_pago', 'num_cuotas']
+    
+    # Iterar sobre la lista de columnas requeridas
+    for columna in columnas_requeridas:
+        # Si la columna no está en el DataFrame, la añadimos con valores vacíos (None o NaN)
+        if columna not in df.columns:
+            df[columna] = None
+    
+    return df
+
+
 def unir(organismo):
 
     acumulador = []
@@ -94,6 +111,7 @@ def unir(organismo):
         aux = pd.read_csv(ruta,compression='xz', sep='\t')
         acumulador.append(aux.copy())
     df =  pd.concat(acumulador)
+    df = asegurar_columnas(df)
     df.to_csv(fr"organismo/{organismo}.csv", index=False,compression='xz', sep='\t')
     gc.collect()
     print(f"Se guardo correctamente {organismo}" , end='\r')
