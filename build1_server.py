@@ -4,6 +4,7 @@ import requests
 from tqdm import tqdm
 import gc
 import os
+import shutil
 
 organismo = pd.read_csv(r"organismo_nombre.csv",compression='xz', sep='\t')
 
@@ -117,10 +118,39 @@ def unir(organismo):
     print(f"Se guardo correctamente {organismo}" , end='\r')
     del df
 
+def make_backup():
+    current_time = datetime.now().strftime("%Y_%m_%d")
+    os.makedirs(f"respaldo/{current_time}", exist_ok=True)
+    source_file = 'respaldo/TA_PersonalPlanta.csv'
+    # Ruta donde deseas copiar el archivo
+    destination_file = f'respaldo/{current_time}/TA_PersonalPlanta.csv'
+    # Copiar el archivo
+    shutil.copy(source_file, destination_file)
+    ##
+    source_file = 'respaldo/TA_PersonalContrata.csv'
+    # Ruta donde deseas copiar el archivo
+    destination_file = f'respaldo/{current_time}/TA_PersonalContrata.csv'
+    # Copiar el archivo
+    shutil.copy(source_file, destination_file)
+    ##
+    source_file = 'respaldo/TA_PersonalCodigotrabajo.csv'
+    # Ruta donde deseas copiar el archivo
+    destination_file = f'respaldo/{current_time}/TA_PersonalCodigotrabajo.csv'
+    # Copiar el archivo
+    shutil.copy(source_file, destination_file)
+    ##
+    source_file = 'respaldo/TA_PersonalContratohonorarios.csv'
+    # Ruta donde deseas copiar el archivo
+    destination_file = f'respaldo/{current_time}/TA_PersonalContratohonorarios.csv'
+    # Copiar el archivo
+    shutil.copy(source_file, destination_file)
 
 
-def GLOBAL():
-    """
+
+
+
+def GLOBAL(): 
+    
     print("TA_PersonalPlanta",datetime.now())
     descargar_archivo(TA_PersonalPlanta            , "respaldo/TA_PersonalPlanta.csv")
     print("TA_PersonalContrata",datetime.now())
@@ -132,7 +162,8 @@ def GLOBAL():
     #del TA_PersonalPlanta, TA_PersonalContrata, TA_PersonalCodigotrabajo, TA_PersonalContratohonorarios
     
     gc.collect()
-    """
+    
+    make_backup()
     print("deparar_partes1")
     separar_partes("respaldo/TA_PersonalPlanta.csv"            ,PersonalPlantaDICT            ,"d1","Planta")
     print("deparar_partes2")
