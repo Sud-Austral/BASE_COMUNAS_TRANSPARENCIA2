@@ -5,6 +5,16 @@ from tqdm import tqdm
 import gc
 import os
 import shutil
+import requests
+from tqdm import tqdm
+import gc
+import logging
+import locale
+locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")  # Cambiar a español
+import numpy as np
+from functools import partial
+from concurrent.futures import ThreadPoolExecutor
+import re
 
 organismo = pd.read_csv(r"organismo_nombre.csv",compression='xz', sep='\t')
 
@@ -18,16 +28,100 @@ TA_PersonalCodigotrabajo                = f"{base}TA_PersonalCodigotrabajo.csv"
 TA_PersonalContratohonorarios           = f"{base}TA_PersonalContratohonorarios.csv"
 
 
-PersonalPlantaDICT                = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual']
-PersonalContrataDICT              = deseadas+["remuliquida_mensual",'Tipo cargo','remuneracionbruta_mensual'] 
-PersonalCodigotrabajoDICT         = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual']
-PersonalContratohonorariosDICT    = deseadas+['remuliquida_mensual','tipo_pago','num_cuotas','remuneracionbruta']
+PersonalPlantaDICT                = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual','fecha_ingreso','fecha_termino']
+PersonalContrataDICT              = deseadas+["remuliquida_mensual",'Tipo cargo','remuneracionbruta_mensual','fecha_ingreso','fecha_termino'] 
+PersonalCodigotrabajoDICT         = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual','fecha_ingreso','fecha_termino']
+PersonalContratohonorariosDICT    = deseadas+['remuliquida_mensual','tipo_pago','num_cuotas','remuneracionbruta','fecha_ingreso','fecha_termino']
 
+# Definir formatos como tupla para mejor rendimiento
+FORMATOS = ('%d/%m/%Y', '%Y/%m/%d %H:%M:%S.%f', '%d/%m/%y')
 
+FECHA_DEFAULT = pd.Timestamp('1900-01-01')
+CURRENT_TIME = pd.Timestamp.now()
 
-import requests
-from tqdm import tqdm
-import gc
+def detect_date_format(fecha):
+    if pd.isna(fecha):
+        return None
+    
+    fecha_str = str(fecha).strip()
+    
+    if not re.match(r'\d{1,4}[/-]\d{1,4}[/-]\d{1,4}', fecha_str):
+        return None
+    
+    format_cache = {}
+    
+    for fmt in FORMATOS:
+        if fmt in format_cache and format_cache[fmt].match(fecha_str):
+            return fmt
+        try:
+            datetime.strptime(fecha_str, fmt)
+            format_cache[fmt] = re.compile(fecha_str)
+            return fmt
+        except ValueError:
+            continue
+    return None
+
+@np.vectorize
+def parse_date_fast(fecha, default_value=FECHA_DEFAULT):
+    if pd.isna(fecha):
+        return default_value
+    
+    fecha_str = str(fecha).strip()
+    fmt = detect_date_format(fecha_str)
+    
+    if fmt:
+        try:
+            return pd.to_datetime(fecha_str, format=fmt)
+        except ValueError:
+            pass
+    return default_value
+
+def process_chunk(chunk_data, column, default_value):
+    """Procesa un chunk individual de datos"""
+    return parse_date_fast(chunk_data[column].values, default_value)
+
+def process_dates(df, chunk_size=10000):
+    # Convertir a categorías para reducir memoria
+    df['fecha_ingreso'] = df['fecha_ingreso'].astype('category')
+    df['fecha_termino'] = df['fecha_termino'].astype('category')
+    
+    # Calcular número de chunks
+    chunks = [df[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
+    
+    ingreso_results = []
+    termino_results = []
+    
+    with ThreadPoolExecutor() as executor:
+        # Procesar fecha_ingreso
+        for chunk in chunks:
+            future = executor.submit(process_chunk, chunk, 'fecha_ingreso', FECHA_DEFAULT)
+            result = future.result()
+            ingreso_results.append(result)
+        
+        # Procesar fecha_termino
+        for chunk in chunks:
+            future = executor.submit(process_chunk, chunk, 'fecha_termino', CURRENT_TIME)
+            result = future.result()
+            termino_results.append(result)
+    
+    # Combinar resultados manejando índices duplicados
+    df['fecha_ingreso'] = np.concatenate(ingreso_results)
+    df['fecha_termino'] = np.concatenate(termino_results)
+    
+    return df
+
+def optimize_dates(df):
+    # Verificar tipos de datos
+    if not isinstance(df, pd.DataFrame):
+        raise TypeError("Input must be a pandas DataFrame")
+    
+    # Verificar columnas requeridas
+    required_cols = ['fecha_ingreso', 'fecha_termino']
+    if not all(col in df.columns for col in required_cols):
+        raise ValueError(f"DataFrame must contain columns: {required_cols}")
+    
+    # Procesamiento optimizado
+    return process_dates(df)
 
 def descargar_archivo(url, nombre_archivo):
     try:
@@ -70,6 +164,7 @@ def separar_partes(ruta,diccionario,folder,base):
         #print("",end='\r')
         file_path = f"{folder}/{i}.csv"
         aux = df[df["organismo_nombre"] == i]
+        aux = optimize_dates(aux)
         aux.to_csv(file_path, compression='xz', sep='\t', index=False)
         del aux
     # Eliminar el DataFrame después de procesarlo
