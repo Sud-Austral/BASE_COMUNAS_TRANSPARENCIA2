@@ -10,16 +10,16 @@ from tqdm import tqdm
 import gc
 import logging
 import locale
-locale.setlocale(locale.LC_TIME, "es_ES.UTF-8")  # Cambiar a español
 import numpy as np
 from functools import partial
 from concurrent.futures import ThreadPoolExecutor
 import re
+from collections import defaultdict
 
 organismo = pd.read_csv(r"organismo_nombre.csv",compression='xz', sep='\t')
 
 base = "https://www.cplt.cl/transparencia_activa/datoabierto/archivos/"
-deseadas =["Nombres","Paterno","Materno","organismo_nombre",'anyo', 'Mes','tipo_calificacionp']
+deseadas =["Nombres","Paterno","Materno","organismo_nombre",'anyo', 'Mes','tipo_calificacionp','fecha_ingreso','fecha_termino']
 
 
 TA_PersonalPlanta                       = f"{base}TA_PersonalPlanta.csv"
@@ -28,10 +28,20 @@ TA_PersonalCodigotrabajo                = f"{base}TA_PersonalCodigotrabajo.csv"
 TA_PersonalContratohonorarios           = f"{base}TA_PersonalContratohonorarios.csv"
 
 
-PersonalPlantaDICT                = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual','fecha_ingreso','fecha_termino']
-PersonalContrataDICT              = deseadas+["remuliquida_mensual",'Tipo cargo','remuneracionbruta_mensual','fecha_ingreso','fecha_termino'] 
-PersonalCodigotrabajoDICT         = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual','fecha_ingreso','fecha_termino']
-PersonalContratohonorariosDICT    = deseadas+['remuliquida_mensual','tipo_pago','num_cuotas','remuneracionbruta','fecha_ingreso','fecha_termino']
+PersonalPlantaDICT                = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual','horasextra',
+                                                'Tipo de unidad monetaria horas diurnas', 'Pago extra diurnas',
+                                                'Horas extra diurnas', 'Tipo de unidad monetaria horas nocturnas',
+                                                'Pago extra nocturnas', 'Horas extra nocturnas',
+                                                'Tipo de unidad monetaria horas festivas', 'Pago extra festivas',
+                                                'Horas extra festivas']
+PersonalContrataDICT              = deseadas+["remuliquida_mensual",'Tipo cargo','remuneracionbruta_mensual','horasextra', 'Tipo de unidad monetaria horas diurnas',
+                                                'Pago extra diurnas', 'Horas extra diurnas',
+                                                'Tipo de unidad monetaria horas nocturnas', 'Pago extra nocturnas',
+                                                'Horas extra nocturnas', 'Tipo de unidad monetaria horas festivas',
+                                                'Pago extra festivas', 'Horas extra festivas'] 
+PersonalCodigotrabajoDICT         = deseadas+["remuliquida_mensual",'Tipo cargo', 'remuneracionbruta_mensual','horas_extra', 'Tipo de unidad monetaria horas diurnas',
+                                                'Pago extra diurnas', 'Horas extra diurnas']
+PersonalContratohonorariosDICT    = deseadas+['remuliquida_mensual','tipo_pago','num_cuotas','remuneracionbruta']
 
 # Definir formatos como tupla para mejor rendimiento
 FORMATOS = ('%d/%m/%Y', '%Y/%m/%d %H:%M:%S.%f', '%d/%m/%y')
@@ -82,8 +92,13 @@ def process_chunk(chunk_data, column, default_value):
 
 def process_dates(df, chunk_size=10000):
     # Convertir a categorías para reducir memoria
-    df['fecha_ingreso'] = df['fecha_ingreso'].astype('category')
-    df['fecha_termino'] = df['fecha_termino'].astype('category')
+    #df = df.copy()
+    #df['fecha_ingreso'] = df['fecha_ingreso'].astype('category')
+    #df['fecha_termino'] = df['fecha_termino'].astype('category')
+
+    df.loc[:, 'fecha_ingreso'] = df['fecha_ingreso'].astype('category')
+    df.loc[:, 'fecha_termino'] = df['fecha_termino'].astype('category')
+
     
     # Calcular número de chunks
     chunks = [df[i:i+chunk_size] for i in range(0, len(df), chunk_size)]
@@ -157,8 +172,34 @@ def descargar_archivo(url, nombre_archivo):
 
 def separar_partes(ruta,diccionario,folder,base):
     df = pd.read_csv(ruta, sep=";",encoding="latin",usecols=diccionario)
-    df = df.rename(columns={'remuneracionbruta': 'remuneracionbruta_mensual'})
+    df = df.rename(columns={'remuneracionbruta': 'remuneracionbruta_mensual',
+                            "horas_extra":"horasextra"})
     df["base"] = base
+
+    column_groups = [
+        ('Tipo de unidad monetaria horas diurnas', ['Pago extra diurnas', 'Horas extra diurnas']),
+        ('Tipo de unidad monetaria horas nocturnas', ['Pago extra nocturnas', 'Horas extra nocturnas']),
+        ('Tipo de unidad monetaria horas festivas', ['Pago extra festivas', 'Horas extra festivas'])
+    ]
+
+    # Aplicar la condición sin try-except
+    for tipo_col, target_cols in column_groups:
+        if tipo_col in df.columns:  # Verifica si la columna existe
+            df.loc[df[tipo_col] != 'Pesos', target_cols] = None
+            del df[tipo_col]
+    
+    change_name_hora_extra = {
+        'Pago extra diurnas':'pago_extra_diurnas',
+        'Horas extra diurnas':'horas_extra_diurnas',
+        'Pago extra nocturnas':'pago_extra_nocturnas',
+        'Horas extra nocturnas':'horas_extra_nocturnas',
+        'Pago extra festivas':'pago_extra_festivas',
+        'Horas extra festivas':'horas_extra_festivas'
+    }
+    df = df.rename(columns=change_name_hora_extra)
+    
+
+
     for i in df["organismo_nombre"].unique():
         #print(i,ruta,end='\r')
         #print("",end='\r')
@@ -166,11 +207,10 @@ def separar_partes(ruta,diccionario,folder,base):
         aux = df[df["organismo_nombre"] == i]
         aux = optimize_dates(aux)
         aux.to_csv(file_path, compression='xz', sep='\t', index=False)
+        #print(aux.columns)
         del aux
     # Eliminar el DataFrame después de procesarlo
     del df
-
-import pandas as pd
 
 def asegurar_columnas(df):
     # Lista de columnas que se esperan en el DataFrame
@@ -241,6 +281,48 @@ def make_backup():
     shutil.copy(source_file, destination_file)
 
 
+def unir2():
+    # Rutas de las carpetas origen
+    carpetas = ['d1', 'd2', 'd3', 'd4']
+    # Carpeta destino
+    carpeta_salida = 'organismo'
+
+    # Asegurar que la carpeta de salida existe
+    os.makedirs(carpeta_salida, exist_ok=True)
+
+    # Diccionario para agrupar archivos por nombre
+    archivos_por_nombre = defaultdict(list)
+
+    # Recorrer carpetas y agrupar por nombre de archivo
+    for carpeta in carpetas:
+        for archivo in os.listdir(carpeta):
+            ruta_completa = os.path.join(carpeta, archivo)
+            if os.path.isfile(ruta_completa):
+                archivos_por_nombre[archivo].append(ruta_completa)
+
+    # Concatenar y guardar
+    for nombre_archivo, rutas in archivos_por_nombre.items():
+        if len(rutas) > 0:  # Solo combinamos si hay más de una copia
+            dfs = [pd.read_csv(ruta,compression='xz', sep='\t') for ruta in rutas]
+            combinado = pd.concat(dfs, ignore_index=True)
+            
+            # Crear carpeta de salida para este archivo
+            #carpeta_destino = os.path.join(carpeta_salida, os.path.splitext(nombre_archivo)[0])
+            #os.makedirs(carpeta_destino, exist_ok=True)
+
+            # Guardar el archivo combinado
+            #ruta_salida = os.path.join(carpeta_destino, nombre_archivo)
+            combinado.to_csv(f"organismo/{nombre_archivo}", index=False,compression='xz', sep='\t')
+
+def referencia_unir():
+    lista_referencia = os.listdir("referencia")
+    for file in lista_referencia:
+        ref = pd.read_csv(f"referencia/{file}",compression='xz', sep='\t')
+        if os.path.exists(f"organismo/{file}"):
+            ref = pd.concat([ref,pd.read_csv(f"organismo/{file}",compression='xz', sep='\t')]).drop_duplicates()
+        ref.to_csv(f"organismo/{file}", index=False,compression='xz', sep='\t')
+
+
 
 
 
@@ -271,29 +353,10 @@ def GLOBAL():
     print("deparar_partes4")
     separar_partes("respaldo/TA_PersonalContratohonorarios.csv",PersonalContratohonorariosDICT,"d4","Contratohonorarios")
     gc.collect()
-    
-    for i in organismo["organismo"]:
-        unir(i)
-
-    """
-    df1 = pd.read_csv(TA_PersonalPlanta, sep=";",encoding="latin",usecols=PersonalPlantaDICT)
-    df1["base"] = "Planta"
-    df2 = pd.read_csv(TA_PersonalContrata, sep=";",encoding="latin",usecols=PersonalContrataDICT)
-    df2["base"] = "Contrata"
-    df3 = pd.read_csv(TA_PersonalCodigotrabajo, sep=";",encoding="latin",usecols=PersonalCodigotrabajoDICT)
-    df3["base"] = "Codigotrabajo"
-    df4 = pd.read_csv(TA_PersonalContratohonorarios, sep=";",encoding="latin",usecols=PersonalContratohonorariosDICT)
-    df4 = df.rename(columns={'remuneracionbruta': 'remuneracionbruta_mensual'})
-    df4["base"] = "Contratohonorarios"
-    df = pd.concat([df1,df2,df3,df4])
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    filename = fr"respaldo/DB_{timestamp}.csv"
-    # Guardar el DataFrame en un archivo CSV con compresión
-    df.to_csv(filename, compression='xz', sep='\t', index=False)
-    for i in df["organismo_nombre"].unique():
-        aux = df[df["organismo_nombre"] == i]
-        aux.to_csv(fr"organismo/{i}.csv", compression='xz', sep='\t', index=False)
-    """
+    unir2()
+    referencia_unir()
+    #for i in organismo["organismo"]:
+    #    unir(i)
 
 
 if __name__ == '__main__':
