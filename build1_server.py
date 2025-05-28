@@ -16,7 +16,7 @@ from concurrent.futures import ThreadPoolExecutor
 import re
 from collections import defaultdict
 
-organismo = pd.read_csv(r"organismo_nombre.csv",compression='xz', sep='\t')
+#organismo = pd.read_csv(r"organismo_nombre.csv",compression='xz', sep='\t')
 
 base = "https://www.cplt.cl/transparencia_activa/datoabierto/archivos/"
 deseadas =["Nombres","Paterno","Materno","organismo_nombre",'anyo', 'Mes','tipo_calificacionp','fecha_ingreso','fecha_termino']
@@ -318,6 +318,7 @@ def referencia_unir():
     lista_referencia = os.listdir("referencia")
     for file in lista_referencia:
         ref = pd.read_csv(f"referencia/{file}",compression='xz', sep='\t')
+        ref = process_dates(ref)
         if os.path.exists(f"organismo/{file}"):
             ref = pd.concat([ref,pd.read_csv(f"organismo/{file}",compression='xz', sep='\t')]).drop_duplicates()
         ref.to_csv(f"organismo/{file}", index=False,compression='xz', sep='\t')
@@ -327,7 +328,7 @@ def referencia_unir():
 
 
 def GLOBAL(): 
-    
+    os.makedirs("respaldo", exist_ok=True)
     print("TA_PersonalPlanta",datetime.now())
     descargar_archivo(TA_PersonalPlanta            , "respaldo/TA_PersonalPlanta.csv")
     print("TA_PersonalContrata",datetime.now())
