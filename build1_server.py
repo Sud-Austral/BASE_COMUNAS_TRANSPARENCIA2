@@ -19,7 +19,7 @@ from collections import defaultdict
 #organismo = pd.read_csv(r"organismo_nombre.csv",compression='xz', sep='\t')
 
 base = "https://www.cplt.cl/transparencia_activa/datoabierto/archivos/"
-deseadas =["Nombres","Paterno","Materno","organismo_nombre",'anyo', 'Mes','tipo_calificacionp','fecha_ingreso','fecha_termino']
+deseadas =["organismo_codigo","Nombres","Paterno","Materno","organismo_nombre",'anyo', 'Mes','tipo_calificacionp','fecha_ingreso','fecha_termino']
 
 
 TA_PersonalPlanta                       = f"{base}TA_PersonalPlanta.csv"
