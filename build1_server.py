@@ -171,6 +171,7 @@ def descargar_archivo(url, nombre_archivo):
 
 
 def separar_partes(ruta,diccionario,folder,base):
+    print(ruta)
     df = pd.read_csv(ruta, sep=";",encoding="latin",usecols=diccionario)
     df = df.rename(columns={'remuneracionbruta': 'remuneracionbruta_mensual',
                             "horas_extra":"horasextra"})
@@ -214,7 +215,7 @@ def separar_partes(ruta,diccionario,folder,base):
 
 def asegurar_columnas(df):
     # Lista de columnas que se esperan en el DataFrame
-    columnas_requeridas = ['organismo_nombre', 'anyo', 'Mes', 'Nombres', 'Paterno', 'Materno',
+    columnas_requeridas = ["organismo_codigo",'organismo_nombre', 'anyo', 'Mes', 'Nombres', 'Paterno', 'Materno',
                            'tipo_calificacionp', 'Tipo cargo', 'remuneracionbruta_mensual',
                            'remuliquida_mensual', 'base', 'tipo_pago', 'num_cuotas']
     
